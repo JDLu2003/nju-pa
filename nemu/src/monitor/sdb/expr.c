@@ -188,7 +188,108 @@ static bool make_token(char *e) {
     }
   }
 
+  tokens_display();
   return true;
+}
+
+/// @brief 检查是否被括号包围
+/// @param p 
+/// @param q 
+/// @return 
+static bool check_parentheses(int p, int q) {
+  if (tokens[p].type != TK_LP) {
+    return false;
+  }
+  int count = 0;
+  for (int i = p; i <= q; i++) {
+    if (tokens[i].type == TK_LP)
+    {
+      count += 1;
+    } else if (tokens[i].type == TK_RP)
+    {
+      count -= 1;
+    }
+  }
+  return count == 0;
+};
+
+
+/// @brief 求主操作符在 tokens[p..q] 中的位置
+/// @param p 
+/// @param q 
+/// @return 
+static int main_operator(int p, int q) {
+  int res = -1;
+  int min_priority = INT32_MAX;
+  int pair_count = 0;
+
+  for (int i = p; i <= q; i++) {
+    if (tokens[i].type == TK_LP) {
+      pair_count++;
+      continue;
+    }
+    if (tokens[i].type == TK_RP) {
+      pair_count--;
+      continue;
+    }
+    if (pair_count != 0)
+    {
+      continue;
+    }
+    if (!is_operator(tokens[i].type)) {
+      continue;
+    }
+    int cur_priority = get_operator_priority(tokens[i].type);
+    if (cur_priority <= min_priority) {
+      min_priority = cur_priority;
+      res = i;
+    }
+  }
+  return res;
+};
+
+uint32_t eval(int p, int q) {
+  Log("eval called with p=%d, q=%d", p, q);
+  int res;
+  if (p > q) {
+    printf("Bad expression\n");
+    assert(0);
+  } 
+  else if (p == q) {
+    if (tokens[p].type == TK_NUM) {
+      res =  (uint32_t)atoi(tokens[p].str);
+    } else {
+      printf("Unexpected token type %d\n", tokens[p].type);
+      assert(0);
+    }
+  } 
+  else if (check_parentheses(p, q)) {
+    return eval(p + 1, q - 1);
+  } 
+  else {
+    int op = main_operator(p, q);
+    Log("main operator at position %d, type=%s", op, get_token_name(tokens[op].type));
+    uint32_t val1 = eval(p, op - 1);
+    uint32_t val2 = eval(op + 1, q);
+    switch (tokens[op].type) {
+      case TK_ADD: res = val1 + val2; break;
+      case TK_SUB: res =  val1 - val2; break;
+      case TK_MULTI: res =  val1 * val2; break;
+      case TK_EQ: res =  val1 == val2; break;
+      case TK_DIVI: 
+        if (val2 == 0) {
+          printf("Division by zero\n");
+          assert(0);
+        }
+        res =  val1 / val2;
+        break;
+      default:
+        printf("Unexpected operator %d\n", tokens[op].type);
+        assert(0);
+    }
+  }
+  Log("eval returning %d for p=%d, q=%d", res, p, q);
+  return res;
 }
 
 
@@ -199,7 +300,10 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
-  TODO();
+  // TODO();
+  
+  *success = true;
+  TODO(); // 错误处理
 
-  return 0;
+  return eval(0, nr_token-1);
 }
