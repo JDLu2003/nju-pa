@@ -128,10 +128,27 @@ static bool make_token(char *e) {
          * of tokens, some extra actions should be performed.
          */
 
-        switch (rules[i].token_type) {
-          default: TODO();
+        // switch (rules[i].token_type) {
+        //   default: TODO();
+        // }
+        if (rules[i].token_type == TK_NOTYPE) {
+          break; 
+       }
+      
+        if (nr_token >= 32) {
+            printf("Error: Too many tokens.\n");
+            return false;
         }
-
+        tokens[nr_token].type = rules[i].token_type;
+        if (rules[i].token_type == TK_NUM) {
+            if (substr_len >= 32) { // 32 是 Token 结构体中 str 的大小
+                printf("Error: number too long\n");
+                return false;
+            }
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+        }
+        nr_token++;
         break;
       }
     }
