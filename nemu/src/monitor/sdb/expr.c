@@ -104,6 +104,16 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
+static void tokens_display() {
+  for (int i = 0; i < nr_token; i++) {
+    printf("Token %d: type=%s", i, get_token_name(tokens[i].type));
+    if (tokens[i].type == TK_NUM) {
+      printf(", str=%s", tokens[i].str);
+    }
+    printf("\n");
+  }
+}
+
 static bool make_token(char *e) {
   int position = 0;
   int i;
