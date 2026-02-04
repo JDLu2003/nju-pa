@@ -52,6 +52,26 @@ static int cmd_q(char *args) {
   return -1;
 }
 
+static int cmd_si(char *args) {
+  TODO();
+}
+
+static int cmd_info(char *args) {
+  TODO();
+}
+
+static int cmd_p(char *args) {
+  TODO();
+}
+
+static int cmd_w(char *args) {
+  TODO();
+}
+
+static int cmd_d(char *args) {
+  TODO();
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -62,6 +82,11 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "Single step", cmd_si}, 
+  { "info", "Print register or watchpoint information", cmd_info},
+  { "p", "Evaluate expression", cmd_p},
+  { "w", "Set a watchpoint", cmd_w},
+  { "d", "Delete a watchpoint", cmd_d},
 
   /* TODO: Add more commands */
 
