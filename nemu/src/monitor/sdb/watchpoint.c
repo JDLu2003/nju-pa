@@ -22,6 +22,9 @@ typedef struct watchpoint {
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
+  char expr[128];
+  word_t val_old;
+  // bool is_used;
 
 } WP;
 
@@ -40,4 +43,89 @@ void init_wp_pool() {
 }
 
 /* TODO: Implement the functionality of watchpoint */
+
+// 分配 wp
+WP* wp_alloc() {
+  if (free_ == NULL) {
+    printf("Error: No free watchpoint\n");
+    return NULL;
+  }
+  WP *wp = free_;
+  free_ = free_->next;
+  wp->next = head;
+  head = wp;
+  return wp;
+}
+
+// 回收wp，helper func
+static void wp_reclaim(WP *wp) {
+  if (wp == NULL) {
+    Log("Error: wp is null\n");
+    return;
+  }
+  if (head == wp) {
+    head = wp->next;
+  }
+  WP *p = head;
+  while (p != NULL && p->next != wp) {
+    p = p->next;
+  }
+  if (p == NULL) {
+    Log("Error: cannot find the wp\n");
+    return;
+  }
+  p->next = wp->next;
+  wp->next = free_;
+  free_ = wp;
+
+  wp->val_old = 0;
+  wp->expr[0] = '\0';
+}
+
+int wp_delete(int no) {
+  WP *wp = head;
+  while (wp != NULL) {
+    if (wp->NO == no) {
+      wp_reclaim(wp);
+      return no;
+    }
+    wp = wp->next;
+  }
+  return -1;
+}
+
+void wp_exist_display() {
+  WP *wp = head;
+  if (wp == NULL) {
+    printf("No watchpoint\n");
+    return;
+  }
+  printf("Watchpoints:\n");
+  printf("NO\tExpression\tOld Value\n");
+  while (wp != NULL) {
+    printf("%d\t%s\t" FMT_WORD "\n", wp->NO, wp->expr, wp->val_old);
+    wp = wp->next;
+  }
+}
+
+int wp_check() {
+  WP *wp = head;
+  bool success;
+  while (wp != NULL) {
+    word_t val_new = expr(wp->expr, &success);
+    if (!success) {
+      panic("load illegal watchpoint expression");
+      return -1;
+    }
+    if (val_new != wp->val_old) {
+      printf("Watchpoint %d triggered: %s\n", wp->NO, wp->expr);
+      printf("Old value: " FMT_WORD ", New value: " FMT_WORD "\n", wp->val_old, val_new);
+      wp->val_old = val_new;
+      return wp->NO;
+    }
+    wp = wp->next;
+  }
+  return 0;
+}
+
 
