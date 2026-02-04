@@ -30,30 +30,49 @@
 
 // };
 #define TOKEN_LIST(X) \
-    X(TK_NUM,    "NUM",    "Numeric constant") \
-    X(TK_MULTI,  "MULTI",  "Multiplication operator") \
-    X(TK_DIVI,   "DIVI",   "Division operator") \
-    X(TK_EQ,     "EQ",     "Equality operator") \
-    X(TK_PLUS,   "PLUS",   "Addition operator") \
-    X(TK_SUB,    "SUB",    "Subtraction operator") \
-    X(TK_LP,     "LP",     "Left parenthesis") \
-    X(TK_RP,     "RP",     "Right parenthesis")
+    X(TK_NUM,    "NUM",    0,  0, "Number") \
+    X(TK_MULTI,  "MUL",    10, 1, "Multiplication") \
+    X(TK_DIVI,   "DIV",    10, 1, "Division") \
+    X(TK_ADD,    "ADD",    5,  1, "Addition") \
+    X(TK_SUB,    "SUB",    5,  1, "Subtraction") \
+    X(TK_EQ,     "EQ",     3,  1, "Equality") \
+    X(TK_LP,     "LP",     20, 0, "Left Parenthesis") \
+    X(TK_RP,     "RP",     20, 0, "Right Parenthesis")
 
 enum {
   TK_NOTYPE = 256,
-#define GENERATE_ENUM(id, str, desc) id,
+#define GENERATE_ENUM(id, str, prec, is_op, desc) id,
     TOKEN_LIST(GENERATE_ENUM)
 #undef GENERATE_ENUM
 };
 
 const char* get_token_name(int type) {
   switch (type) {
-#define GENERATE_CASE(id, str, desc) case id: return str;
+#define GENERATE_CASE(id, str, prec, is_op, desc)case id: return str;
       TOKEN_LIST(GENERATE_CASE)
 #undef GENERATE_CASE
       default: return "UNKNOWN";
   }
 }
+
+bool is_operator(int type) {
+  switch (type) {
+#define GENERATE_IS_OP(id, str, prec, is_op, desc) case id: return is_op;
+    TOKEN_LIST(GENERATE_IS_OP)
+#undef GENERATE_IS_OP
+    default: return 0;
+  }
+}
+
+int get_operator_priority(int type) {
+  switch (type) {
+#define GENERATE_GET_PRIORITY(id, str, prec, is_op, desc) case id: return prec;
+    TOKEN_LIST(GENERATE_GET_PRIORITY)
+#undef GENERATE_GET_PRIORITY
+    default: return -1;
+  }
+}
+
 
 static struct rule {
   const char *regex;
@@ -65,7 +84,7 @@ static struct rule {
    */
 
   {" +", TK_NOTYPE},    // spaces
-  {"\\+", TK_PLUS},         // plus
+  {"\\+", TK_ADD},         // plus
   {"==", TK_EQ},        // equal
   {"[0-9]+", TK_NUM},     // number
   {"\\*", TK_MULTI},
