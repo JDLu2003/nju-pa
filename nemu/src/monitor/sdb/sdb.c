@@ -53,7 +53,14 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_si(char *args) {
-  TODO();
+  char *arg = strtok(NULL, " ");
+  int n = atoi(arg);
+  if (n == 0) {
+    return 0;
+  }
+  Log("input cmd si %d", n);
+  cpu_exec(n);
+  return 0;
 }
 
 static int cmd_info(char *args) {
