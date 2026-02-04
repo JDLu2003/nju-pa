@@ -23,6 +23,8 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+void wp_exist_display();
+word_t vaddr_read(vaddr_t addr, int len);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -64,7 +66,16 @@ static int cmd_si(char *args) {
 }
 
 static int cmd_info(char *args) {
-  isa_reg_display();
+  char *arg = strtok(NULL, " ");
+  if (memcmp(arg, "r", 1) == 0) {
+    Log("input cmd info r");
+    isa_reg_display();
+  } else if (memcmp(arg, "w", 1) == 0) {
+    Log("input cmd info w");
+    wp_exist_display();
+  } else {
+    Log("Error: input cmd info unknown arg");
+  }
   return 0;
 }
 
