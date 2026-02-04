@@ -64,7 +64,8 @@ static int cmd_si(char *args) {
 }
 
 static int cmd_info(char *args) {
-  TODO();
+  isa_reg_display();
+  return 0;
 }
 
 static int cmd_p(char *args) {
