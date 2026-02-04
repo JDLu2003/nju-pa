@@ -20,12 +20,40 @@
  */
 #include <regex.h>
 
+// enum {
+//   TK_NOTYPE = 256, 
+//   TK_NUM, 
+//   TK_MULTI, TK_DIVI, TK_EQ, TK_PLUS, TK_SUB,
+//   TK_LP, TK_RP,
+
+//   /* TODO: Add more token types */
+
+// };
+#define TOKEN_LIST(X) \
+    X(TK_NUM,    "NUM",    "Numeric constant") \
+    X(TK_MULTI,  "MULTI",  "Multiplication operator") \
+    X(TK_DIVI,   "DIVI",   "Division operator") \
+    X(TK_EQ,     "EQ",     "Equality operator") \
+    X(TK_PLUS,   "PLUS",   "Addition operator") \
+    X(TK_SUB,    "SUB",    "Subtraction operator") \
+    X(TK_LP,     "LP",     "Left parenthesis") \
+    X(TK_RP,     "RP",     "Right parenthesis")
+
 enum {
-  TK_NOTYPE = 256, TK_EQ,
-
-  /* TODO: Add more token types */
-
+  TK_NOTYPE = 256,
+#define GENERATE_ENUM(id, str, desc) id,
+    TOKEN_LIST(GENERATE_ENUM)
+#undef GENERATE_ENUM
 };
+
+const char* get_token_name(int type) {
+  switch (type) {
+#define GENERATE_CASE(id, str, desc) case id: return str;
+      TOKEN_LIST(GENERATE_CASE)
+#undef GENERATE_CASE
+      default: return "UNKNOWN";
+  }
+}
 
 static struct rule {
   const char *regex;
@@ -37,8 +65,14 @@ static struct rule {
    */
 
   {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
+  {"\\+", TK_PLUS},         // plus
   {"==", TK_EQ},        // equal
+  {"[0-9]+", TK_NUM},     // number
+  {"\\*", TK_MULTI},
+  {"\\/", TK_DIVI},
+  {"\\-", TK_SUB},
+  {"\\(", TK_LP},         // left parenthesis
+  {"\\)", TK_RP},         // right parenthesis
 };
 
 #define NR_REGEX ARRLEN(rules)
