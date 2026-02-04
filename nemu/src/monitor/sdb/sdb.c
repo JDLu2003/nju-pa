@@ -69,7 +69,20 @@ static int cmd_info(char *args) {
 }
 
 static int cmd_p(char *args) {
-  TODO();
+  // TODO();
+  char *arg_expr = strtok(NULL, "");
+  if (arg_expr == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  bool success;
+  word_t res = expr(arg_expr, &success);
+  if (!success) {
+    printf("Invalid expression: %s\n", arg_expr);
+    return 0;
+  }
+  printf("%u\n", res);
+  return 0;
 }
 
 static int cmd_w(char *args) {
