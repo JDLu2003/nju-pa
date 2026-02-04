@@ -80,6 +80,33 @@ static int cmd_d(char *args) {
   TODO();
 }
 
+static int cmd_scan(char *args) {
+  char *arg_n = strtok(NULL, " ");
+  if (arg_n == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  int n = atoi(arg_n);
+  char *arg_expr = strtok(NULL, "");
+  if (arg_expr == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  // vaddr_t addr = 0x80000000; //临时测试
+  bool success;
+  vaddr_t addr = expr(arg_expr, &success);
+  if (!success) {
+    printf("Invalid expression: %s\n", arg_expr);
+    return 0;
+  }
+  printf("Memory scan starting at " FMT_WORD ":\n", addr);
+  for (int i = 0; i < n; i++) {
+    word_t val = vaddr_read(addr + i * 4, 4);
+    printf(FMT_WORD ": " FMT_WORD "\n", addr + i * 4, val);
+  }
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -95,6 +122,7 @@ static struct {
   { "p", "Evaluate expression", cmd_p},
   { "w", "Set a watchpoint", cmd_w},
   { "d", "Delete a watchpoint", cmd_d},
+  { "x", "Scan memory", cmd_scan},
 
   /* TODO: Add more commands */
 
