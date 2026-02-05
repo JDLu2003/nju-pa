@@ -210,6 +210,9 @@ static bool check_parentheses(int p, int q) {
     {
       count -= 1;
     }
+    if (count == 0 && i < q) {
+      return false;
+    }
   }
   return count == 0;
 };
