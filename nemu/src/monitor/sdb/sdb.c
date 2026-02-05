@@ -113,7 +113,8 @@ static int cmd_w(char *args) {
   }
   int no = wp_new(arg_expr);
   if (no < 0) {
-    printf("No free watchpoint\n");
+    printf("alloc watchpoint failed\n");
+    return 0;
   }
   printf("Set watchpoint %d: %s\n", no, arg_expr);
   return 0;
