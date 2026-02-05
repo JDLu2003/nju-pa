@@ -24,6 +24,8 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 void wp_exist_display();
+int wp_delete(int no);
+int wp_new(char *exp);
 word_t vaddr_read(vaddr_t addr, int len);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
@@ -103,7 +105,18 @@ static int cmd_p(char *args) {
 }
 
 static int cmd_w(char *args) {
-  TODO();
+  // TODO();
+  char *arg_expr = strtok(NULL, "");
+  if (arg_expr == NULL) {
+    printf("Usage: w EXPR\n");
+    return 0;
+  }
+  int no = wp_new(arg_expr);
+  if (no < 0) {
+    printf("No free watchpoint\n");
+  }
+  printf("Set watchpoint %d: %s\n", no, arg_expr);
+  return 0;
 }
 
 static int cmd_d(char *args) {
