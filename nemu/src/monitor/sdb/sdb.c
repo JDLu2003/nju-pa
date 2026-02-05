@@ -56,9 +56,15 @@ static int cmd_q(char *args) {
 
 static int cmd_si(char *args) {
   char *arg = strtok(NULL, " ");
-  int n = atoi(arg);
-  if (n == 0) {
-    return 0;
+  int n;
+  if (arg == NULL) {
+    n = 1;
+
+  } else {
+    n = atoi(arg);
+    if (n == 0) {
+      return 0;
+    }
   }
   Log("input cmd si %d", n);
   cpu_exec(n);
