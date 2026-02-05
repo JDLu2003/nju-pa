@@ -311,3 +311,31 @@ word_t expr(char *e, bool *success) {
 
   return eval(0, nr_token-1);
 }
+
+void expr_test() {
+  FILE *f = fopen("./tools/gen-expr/input", "r");
+  if (f == NULL) {
+    printf("cannot open file\n");
+    assert(0);
+  }
+
+  char line[65536];
+  uint32_t num;
+  char str[65536];
+  int index = 0;
+  while (fgets(line, sizeof(line), f) != NULL)
+  {
+    if (fscanf(f, "%u %[^\n]", &num, str) == 2){
+      printf("fuzz[%d]: %u==%s\n", index, num, str);
+
+      bool success;
+      uint32_t res = expr(str, &success);
+      assert(num==res);
+    } else {
+      printf("error line[%d]: %s\n", index, line);
+    }
+    index++;
+  }
+  
+
+}
