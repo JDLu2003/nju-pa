@@ -70,6 +70,7 @@ static void wp_reclaim(WP *wp) {
   }
   if (head == wp) {
     head = wp->next;
+    goto RECLAIM;
   }
   WP *p = head;
   while (p != NULL && p->next != wp) {
@@ -80,6 +81,7 @@ static void wp_reclaim(WP *wp) {
     return;
   }
   p->next = wp->next;
+RECLAIM:
   wp->next = free_;
   free_ = wp;
 
@@ -88,14 +90,14 @@ static void wp_reclaim(WP *wp) {
 }
 
 int wp_new(char *exp) {
-  WP *w = wp_alloc();
-  if (w == NULL) {
-    return -1;
-  }
   bool success = false;
   int res = expr(exp, &success);
   if (!success) {
     printf("Error: load illegal watchpoint expression\n");
+    return -1;
+  }
+  WP *w = wp_alloc();
+  if (w == NULL) {
     return -1;
   }
 

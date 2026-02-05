@@ -121,7 +121,18 @@ static int cmd_w(char *args) {
 }
 
 static int cmd_d(char *args) {
-  TODO();
+  // TODO();
+  char *arg_no = strtok(NULL, " ");
+  if (arg_no == NULL) {
+    printf("Usage: d N\n");
+    return 0;
+  }
+  int no = atoi(arg_no);
+  int res = wp_delete(no);
+  if (res == -1) {
+    printf("No watchpoint number %d\n", no);
+  }
+  return 0;
 }
 
 static int cmd_scan(char *args) {
