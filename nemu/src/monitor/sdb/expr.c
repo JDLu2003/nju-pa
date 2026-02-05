@@ -20,6 +20,8 @@
  */
 #include <regex.h>
 
+word_t vaddr_read(vaddr_t addr, int len);
+
 // enum {
 //   TK_NOTYPE = 256, 
 //   TK_NUM, 
@@ -30,14 +32,21 @@
 
 // };
 #define TOKEN_LIST(X) \
-    X(TK_NUM,    "NUM",    0,  0, "Number") \
-    X(TK_MULTI,  "MUL",    10, 1, "Multiplication") \
-    X(TK_DIVI,   "DIV",    10, 1, "Division") \
-    X(TK_ADD,    "ADD",    5,  1, "Addition") \
-    X(TK_SUB,    "SUB",    5,  1, "Subtraction") \
-    X(TK_EQ,     "EQ",     3,  1, "Equality") \
-    X(TK_LP,     "LP",     20, 0, "Left Parenthesis") \
-    X(TK_RP,     "RP",     20, 0, "Right Parenthesis")
+    X(TK_NUM,     "NUM",      0,  0, "Number") \
+    X(TK_MULTI,   "MUL",      10, 1, "Multiplication") \
+    X(TK_DIVI,    "DIV",      10, 1, "Division") \
+    X(TK_ADD,     "ADD",      5,  1, "Addition") \
+    X(TK_SUB,     "SUB",      5,  1, "Subtraction") \
+    X(TK_EQ,      "EQ",       3,  1, "Equality") \
+    X(TK_LP,      "LP",       20, 0, "Left Parenthesis") \
+    X(TK_RP,      "RP",       20, 0, "Right Parenthesis") \
+    X(TK_HEX,     "HEX",      0,  0, "HEX Number") \
+    X(TK_NOEQ,    "NOEQ",     3,  1, "No Equality") \
+    X(TK_AND,     "AND",      2,  1, "AND") \
+    X(TK_DER,     "DER",      15, 1, "Dereference") \
+    X(TK_REG,     "REG",      0,  0, "Register")
+
+#define NEXT_SHOULD_BE_TK_DER(x) (x != TK_NUM && x != TK_HEX && x != TK_RP && x != TK_REG)
 
 enum {
   TK_NOTYPE = 256,
@@ -86,12 +95,16 @@ static struct rule {
   {" +", TK_NOTYPE},    // spaces
   {"\\+", TK_ADD},         // plus
   {"==", TK_EQ},        // equal
-  {"[0-9]+", TK_NUM},     // number
-  {"\\*", TK_MULTI},
-  {"\\/", TK_DIVI},
-  {"\\-", TK_SUB},
+  {"0[xX][0-9a-fA-F]+", TK_HEX}, // hexadecimal number
+  {"\\$(x[0-9]|x[1-2][0-9]|x3[0-1]|zero|ra|sp|gp|tp|t[0-6]|s[0-1][0-1]?|a[0-7]|fp|pc|0)", TK_REG}, // register
+  {"[0-9]+", TK_NUM},     // decimal number
+  {"\\*", TK_MULTI},      // multiplication
+  {"\\/", TK_DIVI},       // division
+  {"\\-", TK_SUB},        // subtraction
   {"\\(", TK_LP},         // left parenthesis
   {"\\)", TK_RP},         // right parenthesis
+  {"!=", TK_NOEQ},        // not equal
+  {"&&", TK_AND},         // logical AND
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -120,13 +133,19 @@ typedef struct token {
   char str[32];
 } Token;
 
-static Token tokens[32] __attribute__((used)) = {};
+#define TOKEN_MAX 256
+
+static Token tokens[TOKEN_MAX] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
 static void tokens_display() {
   for (int i = 0; i < nr_token; i++) {
     printf("Token %d: type=%s", i, get_token_name(tokens[i].type));
     if (tokens[i].type == TK_NUM) {
+      printf(", str=%s", tokens[i].str);
+    } else if (tokens[i].type == TK_HEX) {
+      printf(", str=%s", tokens[i].str);
+    } else if (tokens[i].type == TK_REG) {
       printf(", str=%s", tokens[i].str);
     }
     printf("\n");
@@ -164,7 +183,7 @@ static bool make_token(char *e) {
           break; 
        }
       
-        if (nr_token >= 32) {
+        if (nr_token >= TOKEN_MAX) {
             printf("Error: Too many tokens.\n");
             return false;
         }
@@ -172,6 +191,20 @@ static bool make_token(char *e) {
         if (rules[i].token_type == TK_NUM) {
             if (substr_len >= 32) { // 32 是 Token 结构体中 str 的大小
                 printf("Error: number too long\n");
+                return false;
+            }
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+        } else if (rules[i].token_type == TK_HEX) {
+            if (substr_len >= 32) { // 32 是 Token 结构体中 str 的大小
+                printf("Error: hexadecimal number too long\n");
+                return false;
+            }
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+        } else if (rules[i].token_type == TK_REG) {
+            if (substr_len >= 32) { // 32 是 Token 结构体中 str 的大小
+                printf("Error: register name too long\n");
                 return false;
             }
             strncpy(tokens[nr_token].str, substr_start, substr_len);
@@ -262,6 +295,15 @@ uint32_t eval(int p, int q) {
   else if (p == q) {
     if (tokens[p].type == TK_NUM) {
       res =  (uint32_t)atoi(tokens[p].str);
+    } else if (tokens[p].type == TK_HEX) {
+      res =  (uint32_t)strtoul(tokens[p].str, NULL, 16);
+    } else if (tokens[p].type == TK_REG) {
+      bool success;
+      res = isa_reg_str2val(tokens[p].str + 1, &success); 
+      if (!success) {
+        printf("Unknown register %s\n", tokens[p].str);
+        assert(0);
+      }
     } else {
       printf("Unexpected token type %d\n", tokens[p].type);
       assert(0);
@@ -271,6 +313,11 @@ uint32_t eval(int p, int q) {
     return eval(p + 1, q - 1);
   } 
   else {
+    if (tokens[p].type == TK_DER) {
+      uint32_t addr = eval(p + 1, q);
+      res = vaddr_read(addr, 4);
+      return res;
+    }
     int op = main_operator(p, q);
     Log("main operator at position %d, type=%s", op, get_token_name(tokens[op].type));
     uint32_t val1 = eval(p, op - 1);
@@ -287,6 +334,8 @@ uint32_t eval(int p, int q) {
         }
         res =  val1 / val2;
         break;
+      case TK_NOEQ: res =  val1 != val2; break;
+      case TK_AND: res =  val1 && val2; break;
       default:
         printf("Unexpected operator %d\n", tokens[op].type);
         assert(0);
@@ -307,7 +356,15 @@ word_t expr(char *e, bool *success) {
   // TODO();
   
   *success = true;
-  TODO(); // 错误处理
+  // TODO(); // 错误处理
+  for (int i = 0; i < nr_token; i++) {
+    if (tokens[i].type == TK_MULTI && 
+      (i == 0 || NEXT_SHOULD_BE_TK_DER(tokens[i - 1].type))
+    ) {
+      tokens[i].type = TK_DER;
+    }
+  }
+  tokens_display();
 
   return eval(0, nr_token-1);
 }
