@@ -24,7 +24,7 @@ typedef struct watchpoint {
   /* TODO: Add more members if necessary */
   char expr[128];
   word_t val_old;
-  // bool is_used;
+  bool is_used;
 
 } WP;
 
@@ -36,6 +36,8 @@ void init_wp_pool() {
   for (i = 0; i < NR_WP; i ++) {
     wp_pool[i].NO = i;
     wp_pool[i].next = (i == NR_WP - 1 ? NULL : &wp_pool[i + 1]);
+    wp_pool[i].expr[0] = '\0';
+    wp_pool[i].is_used = false;
   }
 
   head = NULL;
@@ -45,7 +47,7 @@ void init_wp_pool() {
 /* TODO: Implement the functionality of watchpoint */
 
 // 分配 wp
-WP* wp_alloc() {
+static WP* wp_alloc() {
   if (free_ == NULL) {
     printf("Error: No free watchpoint\n");
     return NULL;
@@ -54,6 +56,9 @@ WP* wp_alloc() {
   free_ = free_->next;
   wp->next = head;
   head = wp;
+  wp->is_used = false;
+  wp->val_old = 0;
+  wp->expr[0] = '\0';
   return wp;
 }
 
@@ -80,6 +85,25 @@ static void wp_reclaim(WP *wp) {
 
   wp->val_old = 0;
   wp->expr[0] = '\0';
+}
+
+int wp_new(char *exp) {
+  WP *w = wp_alloc();
+  if (w == NULL) {
+    return -1;
+  }
+  bool success = false;
+  int res = expr(exp, &success);
+  if (!success) {
+    printf("Error: load illegal watchpoint expression\n");
+    return -1;
+  }
+
+  strcpy(w->expr, exp);
+  w->is_used = true;
+  w->val_old = res;
+  Log("new watchpoint %d: %s\n", w->NO, w->expr);
+  return w->NO;
 }
 
 int wp_delete(int no) {
@@ -117,7 +141,7 @@ int wp_check() {
       panic("load illegal watchpoint expression");
       return -1;
     }
-    if (val_new != wp->val_old) {
+    if (val_new != wp->val_old || wp->is_used == false) {
       printf("Watchpoint %d triggered: %s\n", wp->NO, wp->expr);
       printf("Old value: " FMT_WORD ", New value: " FMT_WORD "\n", wp->val_old, val_new);
       wp->val_old = val_new;
@@ -125,7 +149,7 @@ int wp_check() {
     }
     wp = wp->next;
   }
-  return 0;
+  return -1;
 }
 
 
