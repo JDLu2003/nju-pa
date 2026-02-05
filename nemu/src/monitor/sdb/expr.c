@@ -138,7 +138,7 @@ typedef struct token {
 static Token tokens[TOKEN_MAX] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
-static void tokens_display() {
+static __attribute__((unused)) void tokens_display() {
   for (int i = 0; i < nr_token; i++) {
     printf("Token %d: type=%s", i, get_token_name(tokens[i].type));
     if (tokens[i].type == TK_NUM) {
@@ -221,7 +221,7 @@ static bool make_token(char *e) {
     }
   }
 
-  tokens_display();
+  // tokens_display();
   return true;
 }
 
@@ -330,7 +330,7 @@ uint32_t eval(int p, int q) {
       case TK_DIVI: 
         if (val2 == 0) {
           printf("Division by zero\n");
-          assert(0);
+          // assert(0);
         }
         res =  val1 / val2;
         break;
@@ -364,7 +364,8 @@ word_t expr(char *e, bool *success) {
       tokens[i].type = TK_DER;
     }
   }
-  tokens_display();
+  // tokens_display();
+  Log("Evaluating expression: %s, nr=%d\n", e, nr_token);
 
   return eval(0, nr_token-1);
 }
