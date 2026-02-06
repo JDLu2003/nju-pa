@@ -23,6 +23,10 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+void wp_exist_display();
+int wp_delete(int no);
+int wp_new(char *exp);
+word_t vaddr_read(vaddr_t addr, int len);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -52,6 +56,112 @@ static int cmd_q(char *args) {
   return -1;
 }
 
+static int cmd_si(char *args) {
+  char *arg = strtok(NULL, " ");
+  int n;
+  if (arg == NULL) {
+    n = 1;
+
+  } else {
+    n = atoi(arg);
+    if (n == 0) {
+      return 0;
+    }
+  }
+  Log("input cmd si %d", n);
+  cpu_exec(n);
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (memcmp(arg, "r", 1) == 0) {
+    Log("input cmd info r");
+    isa_reg_display();
+  } else if (memcmp(arg, "w", 1) == 0) {
+    Log("input cmd info w");
+    wp_exist_display();
+  } else {
+    Log("Error: input cmd info unknown arg");
+  }
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  // TODO();
+  char *arg_expr = strtok(NULL, "");
+  if (arg_expr == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  bool success;
+  word_t res = expr(arg_expr, &success);
+  if (!success) {
+    printf("Invalid expression: %s\n", arg_expr);
+    return 0;
+  }
+  printf("%u 0x%X\n", res, res);
+  return 0;
+}
+
+static int cmd_w(char *args) {
+  // TODO();
+  char *arg_expr = strtok(NULL, "");
+  if (arg_expr == NULL) {
+    printf("Usage: w EXPR\n");
+    return 0;
+  }
+  int no = wp_new(arg_expr);
+  if (no < 0) {
+    printf("alloc watchpoint failed\n");
+    return 0;
+  }
+  printf("Set watchpoint %d: %s\n", no, arg_expr);
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  // TODO();
+  char *arg_no = strtok(NULL, " ");
+  if (arg_no == NULL) {
+    printf("Usage: d N\n");
+    return 0;
+  }
+  int no = atoi(arg_no);
+  int res = wp_delete(no);
+  if (res == -1) {
+    printf("No watchpoint number %d\n", no);
+  }
+  return 0;
+}
+
+static int cmd_scan(char *args) {
+  char *arg_n = strtok(NULL, " ");
+  if (arg_n == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  int n = atoi(arg_n);
+  char *arg_expr = strtok(NULL, "");
+  if (arg_expr == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  // vaddr_t addr = 0x80000000; //临时测试
+  bool success;
+  vaddr_t addr = expr(arg_expr, &success);
+  if (!success) {
+    printf("Invalid expression: %s\n", arg_expr);
+    return 0;
+  }
+  printf("Memory scan starting at " FMT_WORD ":\n", addr);
+  for (int i = 0; i < n; i++) {
+    word_t val = vaddr_read(addr + i * 4, 4);
+    printf(FMT_WORD ": " FMT_WORD "\n", addr + i * 4, val);
+  }
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -62,6 +172,12 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "Single step", cmd_si}, 
+  { "info", "Print register or watchpoint information", cmd_info},
+  { "p", "Evaluate expression", cmd_p},
+  { "w", "Set a watchpoint", cmd_w},
+  { "d", "Delete a watchpoint", cmd_d},
+  { "x", "Scan memory", cmd_scan},
 
   /* TODO: Add more commands */
 
