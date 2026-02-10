@@ -153,6 +153,13 @@ void init_ftrace(const char *elf_file) {
       func_table[func_idx].name[63] = '\0';
       func_table[func_idx].start_addr = symtab[i].st_value;
       func_table[func_idx].end_addr = symtab[i].st_value + symtab[i].st_size;
+
+      // 调试输出：显示前几个函数符号的信息
+      if (func_idx < 5) {
+        Log("ftrace: [%d] %s @ [" FMT_WORD ", " FMT_WORD ")",
+            func_idx, func_table[func_idx].name,
+            func_table[func_idx].start_addr, func_table[func_idx].end_addr);
+      }
       func_idx++;
     }
   }
@@ -168,6 +175,10 @@ void init_ftrace(const char *elf_file) {
 // 记录函数调用
 void ftrace_call(vaddr_t pc, vaddr_t target) {
   const char *func_name = find_func_name(target);
+  if (strcmp(func_name, "???") == 0) {
+    // 找不到符号时 panic，便于调试
+    panic("ftrace: Cannot find symbol for address " FMT_WORD, target);
+  }
   _Log(FMT_WORD ": %*scall [%s@" FMT_WORD "]\n",
        pc, call_depth * 2, "", func_name, target);
   call_depth++;
@@ -178,6 +189,10 @@ void ftrace_ret(vaddr_t pc) {
   call_depth--;
   if (call_depth < 0) call_depth = 0;
   const char *func_name = find_func_name(pc);
+  if (strcmp(func_name, "???") == 0) {
+    // 找不到符号时 panic，便于调试
+    panic("ftrace: Cannot find symbol for address " FMT_WORD, pc);
+  }
   _Log(FMT_WORD ": %*sret  [%s]\n",
        pc, call_depth * 2, "", func_name);
 }
