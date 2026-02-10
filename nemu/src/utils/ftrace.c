@@ -49,6 +49,16 @@ bool ftrace_find_symbol(const char *name, vaddr_t *addr) {
   return false;
 }
 
+// 打印函数表内容
+void display_ftrace_table() {
+  Log("ftrace: Function Symbol Table");
+  Log("%-30s %-15s %-15s", "Name", "Start Addr", "End Addr");
+  for (int i = 0; i < func_count; i++) {
+    Log("%-30s " FMT_WORD "      " FMT_WORD,
+        func_table[i].name, func_table[i].start_addr, func_table[i].end_addr);
+  }
+}
+
 // 初始化 ftrace，解析 ELF 文件
 void init_ftrace(const char *elf_file) {
   if (elf_file == NULL) {
