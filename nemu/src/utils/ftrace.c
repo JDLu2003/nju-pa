@@ -82,7 +82,9 @@ void init_ftrace(const char *elf_file) {
 
   // 读取 section headers
   Elf32_Shdr *shdr = malloc(sizeof(Elf32_Shdr) * ehdr.e_shnum);
+  // 磁头偏移到 section header table
   fseek(fp, ehdr.e_shoff, SEEK_SET);
+  // 读取 section header table
   if (fread(shdr, sizeof(Elf32_Shdr), ehdr.e_shnum, fp) != ehdr.e_shnum) {
     Log("Failed to read section headers");
     free(shdr);
@@ -94,6 +96,8 @@ void init_ftrace(const char *elf_file) {
   Elf32_Shdr *symtab_shdr = NULL;
   Elf32_Shdr *strtab_shdr = NULL;
 
+  // 遍历 section header table
+  // 去找到符号表对应的 header
   for (int i = 0; i < ehdr.e_shnum; i++) {
     if (shdr[i].sh_type == SHT_SYMTAB) {
       symtab_shdr = &shdr[i];
@@ -109,7 +113,7 @@ void init_ftrace(const char *elf_file) {
     return;
   }
 
-  // 读取符号表
+  // 读取完整符号表
   int sym_count = symtab_shdr->sh_size / sizeof(Elf32_Sym);
   Elf32_Sym *symtab = malloc(symtab_shdr->sh_size);
   fseek(fp, symtab_shdr->sh_offset, SEEK_SET);
@@ -121,7 +125,7 @@ void init_ftrace(const char *elf_file) {
     return;
   }
 
-  // 读取字符串表
+  // 读取完整字符串表
   char *strtab = malloc(strtab_shdr->sh_size);
   fseek(fp, strtab_shdr->sh_offset, SEEK_SET);
   if (fread(strtab, strtab_shdr->sh_size, 1, fp) != 1) {
