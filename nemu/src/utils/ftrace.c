@@ -38,6 +38,17 @@ static const char* find_func_name(vaddr_t addr) {
   return "???";
 }
 
+// 根据函数名查找地址（用于表达式求值）
+bool ftrace_find_symbol(const char *name, vaddr_t *addr) {
+  for (int i = 0; i < func_count; i++) {
+    if (strcmp(func_table[i].name, name) == 0) {
+      *addr = func_table[i].start_addr;
+      return true;
+    }
+  }
+  return false;
+}
+
 // 初始化 ftrace，解析 ELF 文件
 void init_ftrace(const char *elf_file) {
   if (elf_file == NULL) {

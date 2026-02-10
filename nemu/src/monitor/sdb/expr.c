@@ -44,9 +44,10 @@ word_t vaddr_read(vaddr_t addr, int len);
     X(TK_NOEQ,    "NOEQ",     3,  1, "No Equality") \
     X(TK_AND,     "AND",      2,  1, "AND") \
     X(TK_DER,     "DER",      15, 1, "Dereference") \
-    X(TK_REG,     "REG",      0,  0, "Register")
+    X(TK_REG,     "REG",      0,  0, "Register") \
+    X(TK_SYM,     "SYM",      0,  0, "Symbol")
 
-#define NEXT_SHOULD_BE_TK_DER(x) (x != TK_NUM && x != TK_HEX && x != TK_RP && x != TK_REG)
+#define NEXT_SHOULD_BE_TK_DER(x) (x != TK_NUM && x != TK_HEX && x != TK_RP && x != TK_REG && x != TK_SYM)
 
 enum {
   TK_NOTYPE = 256,
@@ -98,6 +99,7 @@ static struct rule {
   {"0[xX][0-9a-fA-F]+", TK_HEX}, // hexadecimal number
   {"\\$(x[0-9]|x[1-2][0-9]|x3[0-1]|zero|ra|sp|gp|tp|t[0-6]|s[0-1][0-1]?|a[0-7]|fp|pc|0)", TK_REG}, // register
   {"[0-9]+", TK_NUM},     // decimal number
+  {"[a-zA-Z_][a-zA-Z0-9_]*", TK_SYM}, // symbol (function/variable name)
   {"\\*", TK_MULTI},      // multiplication
   {"\\/", TK_DIVI},       // division
   {"\\-", TK_SUB},        // subtraction
@@ -146,6 +148,8 @@ static __attribute__((unused)) void tokens_display() {
     } else if (tokens[i].type == TK_HEX) {
       printf(", str=%s", tokens[i].str);
     } else if (tokens[i].type == TK_REG) {
+      printf(", str=%s", tokens[i].str);
+    } else if (tokens[i].type == TK_SYM) {
       printf(", str=%s", tokens[i].str);
     }
     printf("\n");
@@ -205,6 +209,13 @@ static bool make_token(char *e) {
         } else if (rules[i].token_type == TK_REG) {
             if (substr_len >= 32) { // 32 是 Token 结构体中 str 的大小
                 printf("Error: register name too long\n");
+                return false;
+            }
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+        } else if (rules[i].token_type == TK_SYM) {
+            if (substr_len >= 32) {
+                printf("Error: symbol name too long\n");
                 return false;
             }
             strncpy(tokens[nr_token].str, substr_start, substr_len);
@@ -299,11 +310,24 @@ uint32_t eval(int p, int q) {
       res =  (uint32_t)strtoul(tokens[p].str, NULL, 16);
     } else if (tokens[p].type == TK_REG) {
       bool success;
-      res = isa_reg_str2val(tokens[p].str + 1, &success); 
+      res = isa_reg_str2val(tokens[p].str + 1, &success);
       if (!success) {
         printf("Unknown register %s\n", tokens[p].str);
         assert(0);
       }
+    } else if (tokens[p].type == TK_SYM) {
+      vaddr_t addr;
+#ifdef CONFIG_FTRACE
+      if (ftrace_find_symbol(tokens[p].str, &addr)) {
+        res = (uint32_t)addr;
+      } else {
+        printf("Unknown symbol '%s'\n", tokens[p].str);
+        assert(0);
+      }
+#else
+      printf("Symbol lookup not available (ftrace disabled)\n");
+      assert(0);
+#endif
     } else {
       printf("Unexpected token type %d\n", tokens[p].type);
       assert(0);
