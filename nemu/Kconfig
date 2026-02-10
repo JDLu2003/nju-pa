@@ -151,6 +151,13 @@ config ITRACE_COND
   string "Only trace instructions when the condition is true"
   default "true"
 
+config FTRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
+  bool "Enable function tracer"
+  default y
+  help
+    Enable function call tracing to track function calls and returns.
+
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
