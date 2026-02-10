@@ -18,6 +18,15 @@
 #include <device/mmio.h>
 #include <isa.h>
 
+#ifdef CONFIG_MTRACE
+static void log_mtrace(paddr_t addr, int len, word_t data, char type) {
+  if (1) {
+    Log("[mtrace] %s access at " FMT_PADDR " (len=%d) = " FMT_WORD,
+    (type == 'r' ? "READ " : "WRITE"), addr, len, data);
+  }
+}
+#endif
+
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
@@ -51,14 +60,31 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr))) return pmem_read(addr, len);
-  IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
-  out_of_bound(addr);
-  return 0;
+  word_t ret = 0;
+  if (likely(in_pmem(addr))) {
+    ret = pmem_read(addr, len);
+  } else {
+    IFDEF(CONFIG_DEVICE, ret = mmio_read(addr, len));
+    if (!in_pmem(addr)) {
+      out_of_bound(addr);
+    }
+  }
+  #ifdef CONFIG_MTRACE
+  log_mtrace(addr, len, ret, 'r');
+  #endif
+  return ret;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
-  IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
-  out_of_bound(addr);
+  #ifdef CONFIG_MTRACE
+  log_mtrace(addr, len, data, 'w');
+  #endif
+  if (likely(in_pmem(addr))) {
+    pmem_write(addr, len, data);
+  } else {
+    IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data));
+    if (!in_pmem(addr)) {
+      out_of_bound(addr);
+    }
+  }
 }
