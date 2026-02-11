@@ -316,8 +316,8 @@ uint32_t eval(int p, int q) {
         assert(0);
       }
     } else if (tokens[p].type == TK_SYM) {
-      vaddr_t addr;
 #ifdef CONFIG_FTRACE
+      vaddr_t addr;
       if (ftrace_find_symbol(tokens[p].str, &addr)) {
         res = (uint32_t)addr;
       } else {
