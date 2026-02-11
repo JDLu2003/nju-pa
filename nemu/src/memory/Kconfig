@@ -31,4 +31,25 @@ config MEM_RANDOM
   help
     This may help to find undefined behaviors.
 
+config MTRACE
+    bool "Enable Memory Trace"
+    default y
+    help
+      Enable memory trace to record memory access.
+
+config MTRACE_START
+    hex "Start address of memory trace"
+    default 0x80000000
+    depends on MTRACE
+    help
+      The start address of the memory range to trace.
+
+config MTRACE_END
+    hex "End address of memory trace"
+    default 0x88000000
+    depends on MTRACE
+    help
+      The end address of the memory range to trace.
+
+
 endmenu #MEMORY
