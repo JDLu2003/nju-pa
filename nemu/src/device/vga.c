@@ -90,6 +90,10 @@ void vga_update_screen() {
   // TODO: 当同步寄存器 (sync register) 为非零时，调用 `update_screen()`，
   // 然后将同步寄存器清零。
   // 同步寄存器通常位于 vgactl_port_base[1]。
+  if (vgactl_port_base[1] == 1) {
+    update_screen();
+    vgactl_port_base[1] = 0;
+  }
 }
 
 /* 初始化 VGA 设备 */
