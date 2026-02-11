@@ -1,4 +1,7 @@
 #include <common.h>
+
+#ifdef CONFIG_ITRACE
+
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 
 #define IRINGBUF_SIZE 16
@@ -37,3 +40,5 @@ void iringbuf_display() {
   } while (i != end);
 }
 
+
+#endif
