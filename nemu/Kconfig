@@ -158,6 +158,13 @@ config FTRACE
   help
     Enable function call tracing to track function calls and returns.
 
+config DTRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
+  bool "Enable device tracer"
+  default n
+  help
+    Enable device tracing to track MMIO/PIO device accesses.
+
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF

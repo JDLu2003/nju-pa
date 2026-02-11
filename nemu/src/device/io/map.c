@@ -46,6 +46,15 @@ static void invoke_callback(io_callback_t c, paddr_t offset, int len, bool is_wr
   if (c != NULL) { c(offset, len, is_write); }
 }
 
+#ifdef CONFIG_DTRACE
+void log_dtrace(paddr_t addr, int len, word_t data, char type, IOMap *map) {
+  if (1) { // 可以添加条件控制，例如 if (dtrace_cond)
+    Log("[dtrace] %s %s at " FMT_PADDR " (len=%d) = " FMT_WORD,
+        (type == 'r' ? "READ " : "WRITE"), map->name, addr, len, data);
+  }
+}
+#endif
+
 void init_map() {
   io_space = malloc(IO_SPACE_MAX);
   assert(io_space);
@@ -58,6 +67,9 @@ word_t map_read(paddr_t addr, int len, IOMap *map) {
   paddr_t offset = addr - map->low;
   invoke_callback(map->callback, offset, len, false); // prepare data to read
   word_t ret = host_read(map->space + offset, len);
+#ifdef CONFIG_DTRACE
+  log_dtrace(addr, len, ret, 'r', map);
+#endif
   return ret;
 }
 
@@ -67,4 +79,7 @@ void map_write(paddr_t addr, int len, word_t data, IOMap *map) {
   paddr_t offset = addr - map->low;
   host_write(map->space + offset, len, data);
   invoke_callback(map->callback, offset, len, true);
+#ifdef CONFIG_DTRACE
+  log_dtrace(addr, len, data, 'w', map);
+#endif
 }
